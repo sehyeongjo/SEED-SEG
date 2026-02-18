@@ -3,12 +3,20 @@
 
 
 
+Dockerfile
+```
+# Set user / pw
+# Default is root/root (sudo permission)
+RUN echo "root:root" | chpasswd
 ```
 
+Docker Image Build
+```
+docker build -t seg-seed .
+```
 
-
-
-
+Docker Run
+```
 port 7007 : for web app
 port 7022 : for ssh
 
