@@ -2,12 +2,14 @@
 Connect SSH
 
 1. After connecting, run the following command in that folder:
+```
 git clone https://github.com/sehyeongjo/SEED-SEG.git
-
+```
 
 2. Copy the directory using:
+```
 cp -r SEED-SEG/app/ /app
-
+```
 
 
 Dockerfile
