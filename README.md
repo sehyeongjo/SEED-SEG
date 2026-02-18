@@ -33,3 +33,29 @@ docker run -d --name seg-seed2 \
   --mount type=bind,source="{SEED CT DATA ROOT PATH}",target=/data \
   seg-seed
 ```
+
+
+
+Data(SEED CT) File Tree Structure
+```
+.
+└── Data(Root)/
+    ├── tray/
+    │   ├── 1
+    │   ├── 2
+    │   └── ...
+    ├── trayseg_output/
+    │   └── TBD
+    └── mask_data/
+        ├── 1/
+        │   ├── mask/
+        │   │   ├── merged_011040_output
+        │   │   ├── merged_011041_output
+        │   │   └── ...
+        │   └── original/
+        │       ├── merged_011040_output (Same mask)
+        │       ├── merged_011041_output
+        │       └── ...
+        ├── 2
+        └── ...
+```
