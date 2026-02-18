@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Angle</title>
+    <link rel="stylesheet" href="/static/stylesheet/style.css?v=20260218-1">
+</head>
+<body class="page-angle">
+    <div class="panel">
+        <h1>Angle</h1>
+        <a href="/">Back</a>
+
+        <div class="row">
+            <label for="traySelect">Tray</label>
+            <select id="traySelect">
+                <option value="">Select tray</option>
+            </select>
+            <button id="refreshBtn" type="button">Reload Preview</button>
+        </div>
+
+        <div class="status" id="status">Loading tray list...</div>
+        <div class="preview-grid" id="previewGrid"></div>
+
+        <div class="editor" id="editor" hidden>
+            <div class="editor-head" id="selectedFile">No image selected</div>
+            <div class="viewer">
+                <img id="selectedImage" alt="selected tray image">
+                <div class="axis-x"></div>
+                <div class="axis-y"></div>
+                <div class="axis-label axis-label-x">X</div>
+                <div class="axis-label axis-label-y">Y</div>
+            </div>
+            <div class="controls">
+                <button id="rotateMinusBtn" type="button">-1°</button>
+                <button id="rotatePlusBtn" type="button">+1°</button>
+                <input id="angleRange" type="range" min="-180" max="180" step="0.1" value="0">
+                <div class="angle-readout">Angle: <span id="angleValue">0.0</span>°</div>
+                <button id="saveAngleBtn" type="button">Angle Save</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/angle.js"></script>
+</body>
+</html>

@@ -1,0 +1,86 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Mask</title>
+<link rel="stylesheet" href="/static/stylesheet/style.css?v=20260218-1">
+</head>
+<body class="page-mask">
+    <div class="panel">
+        <h1>Mask</h1>
+        <a href="/">Back</a>
+
+        <div class="row">
+            <label for="traySelect">Tray</label>
+            <select id="traySelect">
+                <option value="">Select tray</option>
+            </select>
+            <button id="reloadTrayBtn" type="button" class="secondary">Reload Trays</button>
+
+            <label for="mergedSelect">Merged</label>
+            <select id="mergedSelect" disabled>
+                <option value="">Select merged folder</option>
+            </select>
+
+            <label for="pngSelect">PNG</label>
+            <select id="pngSelect" disabled>
+                <option value="">Select png</option>
+            </select>
+            <button id="applySelectionBtn" type="button" disabled>Load</button>
+        </div>
+
+        <div class="row">
+            <label for="brushSize">Brush</label>
+            <input id="brushSize" type="range" min="1" max="50" value="15">
+            <input id="brushSizeNumber" type="number" min="1" max="50" value="15" style="width:70px;">
+            <span id="brushValue">15</span>
+
+            <label for="paintValue">Paint</label>
+            <select id="paintValue">
+                <option value="255" selected>White (255)</option>
+                <option value="0">Black (0)</option>
+            </select>
+
+            <button id="eraserToggle" type="button" class="secondary">Eraser: Off</button>
+            <label><input id="showBrushOverlay" type="checkbox" checked> Brush overlay</label>
+        </div>
+
+        <div class="row">
+            <button id="invertBtn" type="button" class="secondary">Invert</button>
+            <button id="saveMaskBtn" type="button">Save</button>
+            <button id="resetMaskBtn" type="button" class="secondary">Reset edits</button>
+            <button id="saveExistingMaskBtn" type="button" class="secondary">Save existing mask</button>
+        </div>
+
+        <input id="imgPath" class="hidden" readonly>
+        <div id="pathInfo" class="status">Select tray, merged folder, and png.</div>
+
+        <div class="canvas-wrap">
+            <div class="canvas-card">
+                <div class="canvas-title">
+                    <span>Editor</span>
+                    <label for="canvasViewMode">View</label>
+                    <select id="canvasViewMode">
+                        <option value="original" selected>Original</option>
+                        <option value="mask">Mask</option>
+                    </select>
+                </div>
+                <canvas id="canvas"></canvas>
+            </div>
+            <div class="canvas-card">
+                <div class="canvas-title">
+                    <span>Preview</span>
+                    <label for="previewMode">View</label>
+                    <select id="previewMode">
+                        <option value="original" selected>Original image</option>
+                        <option value="mask">Mask image</option>
+                    </select>
+                </div>
+                <canvas id="previewCanvas"></canvas>
+            </div>
+        </div>
+    </div>
+
+<script src="/static/js/mask.js?v=20260218-2"></script>
+</body>
+</html>

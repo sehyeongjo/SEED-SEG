@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Tray Seg</title>
+    <link rel="stylesheet" href="/static/stylesheet/style.css?v=20260218-1">
+</head>
+<body class="page-trayseg">
+    <div class="panel">
+        <h1>Tray Seg</h1>
+        <a href="/">Back</a>
+        <div class="row">
+            <label for="traySelect">Tray</label>
+            <select id="traySelect">
+                <option value="">Select tray</option>
+            </select>
+            <button id="refreshBtn" type="button">Reload Preview</button>
+        </div>
+        <div class="status" id="status">Loading tray list...</div>
+        <div class="angle-badge" id="angleBadge">Applied Angle: 0.0°</div>
+        <div class="preview-grid" id="previewGrid"></div>
+        <div class="actions">
+            <button id="buildTemplateBtn" type="button">Build Template</button>
+            <button id="cancelJobBtn" type="button">Stop</button>
+        </div>
+        <div class="progress-wrap">
+            <div class="progress-label">Template Stage</div>
+            <div class="progress-track"><div class="progress-fill" id="templateProgressFill"></div></div>
+            <div class="progress-text" id="templateProgressText">0%</div>
+        </div>
+        <div class="progress-wrap">
+            <div class="progress-label">Process Stage</div>
+            <div class="progress-track"><div class="progress-fill" id="processProgressFill"></div></div>
+            <div class="progress-text" id="processProgressText">0%</div>
+        </div>
+        <div class="overlay-section" id="overlaySection" hidden>
+            <h3>Template Overlay Preview</h3>
+            <div class="overlay-grid" id="overlayGrid"></div>
+            <div class="actions">
+                <button id="segmentationBtn" type="button">Segmentation</button>
+            </div>
+        </div>
+    </div>
+    <script src="/static/js/trayseg.js?v=20260218-1"></script>
+</body>
+</html>

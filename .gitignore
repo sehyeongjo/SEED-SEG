@@ -1,0 +1,28 @@
+# Python cache/artifacts
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+
+# Tool caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtualenvs
+.venv/
+venv/
+env/
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+
+# Runtime/generated outputs
+app/angle.json
+trayseg_output/
+data/
+
+# Logs
+*.log
