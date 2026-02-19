@@ -30,6 +30,6 @@ RUN chmod +x /app/start.sh
 # Data Mount
 RUN mkdir -p /data
 
-EXPOSE 7007 22
+EXPOSE 7900 22
 
 CMD ["/app/start.sh"]

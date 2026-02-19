@@ -1,16 +1,32 @@
 
-Connect SSH
-
-1. After connecting, run the following command in that folder:
+1. Clone this repository:
 ```
 git clone https://github.com/sehyeongjo/SEED-SEG.git
+cd SEED-SEG
 ```
 
-2. Copy the directory using:
+2. Docker Image Build:
 ```
-cp -r SEED-SEG/app/ /app
+cd SEED-SEG & docker build -t seg-seed .
 ```
 
+3. Docker Container Run:
+```
+docker run -d --name seg-seed2 \
+  -p 7900:7900 \
+  -p 7922:22 \
+  --mount type=bind,source="{SEED CT DATA ROOT PATH}",target=/data \
+  seg-seed
+```
+
+4. Run the Web Application in a browser
+```
+http://localhost:7900
+```
+
+
+
+Info.
 
 Dockerfile
 ```
@@ -19,21 +35,10 @@ Dockerfile
 RUN echo "root:root" | chpasswd
 ```
 
-Docker Image Build
-```
-docker build -t seg-seed .
-```
-
 Docker Run
 ```
-port 7007 : for web app
-port 7022 : for ssh
-
-docker run -d --name seg-seed2 \
-  -p 7007:7007 \
-  -p 7022:22 \
-  --mount type=bind,source="{SEED CT DATA ROOT PATH}",target=/data \
-  seg-seed
+port 7900 : for web app
+port 7922 : for ssh
 ```
 
 
