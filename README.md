@@ -59,7 +59,17 @@ Data(SEED CT) File Tree Structure
     │   ├── 2
     │   └── ...
     ├── trayseg_output/
-    │   └── TBD
+    │   ├── 1/
+    │   │   ├── merged_002534/
+    │   │   │   ├── cells/
+    │   │   │   │   ├── A_1.png
+    │   │   │   │   ├── A_2.png
+    │   │   │   │   └── ...
+    │   │   │   └── debug
+    │   │   ├── merged_002535
+    │   │   └── ...
+    │   ├── 2
+    │   └── ...
     └── mask_data/
         ├── 1/
         │   ├── mask/
@@ -67,7 +77,7 @@ Data(SEED CT) File Tree Structure
         │   │   ├── merged_011041_output
         │   │   └── ...
         │   └── original/
-        │       ├── merged_011040_output (Same mask)
+        │       ├── merged_011040_output (Same mask's )
         │       ├── merged_011041_output
         │       └── ...
         ├── 2
