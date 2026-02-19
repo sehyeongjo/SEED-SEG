@@ -1,5 +1,6 @@
-<img width="181" height="721" alt="Image" src="https://github.com/user-attachments/assets/1306eb02-7c90-4c57-88be-86f4ace323e9" />
-
+<div align="center">
+  <img width="181" height="721" alt="Image" src="https://github.com/user-attachments/assets/1306eb02-7c90-4c57-88be-86f4ace323e9" />
+</div>
 
 1. Clone this repository:
 ```
