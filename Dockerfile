@@ -13,7 +13,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 RUN mkdir -p /var/run/sshd
 
-# Set user / pw
+# Set root password.
 RUN echo "root:root" | chpasswd
 
 RUN sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config && \
@@ -27,7 +27,7 @@ COPY app /app/app
 COPY start.sh /app/start.sh
 RUN chmod +x /app/start.sh
 
-# Data Mount
+# Data mount point.
 RUN mkdir -p /data
 
 EXPOSE 7900 22

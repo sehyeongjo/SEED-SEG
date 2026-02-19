@@ -31,8 +31,13 @@ docker run -d --name seg-seed2 \
 http://localhost:7900
 ```
 
+4-1. For SSH
+```
+ssh -P 7922 root@localhost / pw: root
+```
 
-4-1. For using command line
+
+4-2. For using command line (RECOMMEND)
 ```
 IMPORTANT!!
 1.
@@ -44,11 +49,28 @@ chmod +x build_template.sh
 chmod +x box_segmentation.sh
 
 
-# for build template
+# Build template
 ./build_template.sh
 
-# for bod segmentation
+# Run box segmentation
 ./box_segmentation.sh
+```
+
+5. SAM
+```
+cd sam
+python sam.py --tray_num {TRAY_NUM:int}
+```
+
+6. U-Net
+```
+cd unet
+
+# Train
+python train.py
+
+# Inference
+python infer.py --tray_num {TRAY_NUM:int} --checkpoint_name {CHECKPOINT.ckpt}
 ```
 
 
@@ -58,8 +80,8 @@ Info.
 
 Dockerfile
 ```
-# Set user / pw
-# Default is root/root (sudo permission)
+# Set root password
+# Default: root/root (with sudo permission)
 RUN echo "root:root" | chpasswd
 ```
 

@@ -8,25 +8,7 @@ import cv2
 import numpy as np
 from tqdm import tqdm
 
-# ---------------------------
-# For Orientation Check (Status : 0)
-# 
-# For Build Template (Status : 1)
-# python axis_seg_test_v22.py \
-#   --mode build_template \
-#   --tray_num {} \
-#   --manual_angle {*}
-# 
-# For Process (Status : 2)
-# python axis_seg_test_v22.py \
-#   --mode process \
-#   --tray_num {} \
-#   --manual_angle {*}
-# ---------------------------
 
-# ---------------------------
-# Utils
-# ---------------------------
 def ensure_dir(p: Path):
     p.mkdir(parents=True, exist_ok=True)
 
@@ -58,9 +40,6 @@ def to_gray_u8(img: np.ndarray) -> np.ndarray:
         img = cv2.normalize(img, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
     return img
 
-# ---------------------------
-# Orientation
-# ---------------------------
 def rotate_keep_all(image: np.ndarray, angle_deg: float) -> np.ndarray:
     h, w = image.shape[:2]
     center = (w / 2.0, h / 2.0)
@@ -125,9 +104,6 @@ def estimate_rotation_to_axis(gray_u8: np.ndarray) -> float:
     return float(angle_deg)
 
 
-# ---------------------------
-# Grid ROI detection
-# ---------------------------
 def find_grid_roi_bbox(rot_gray_u8: np.ndarray) -> tuple[int, int, int, int]:
     """
     orientation된 그레이 이미지에서 '가운데 사각 그리드(큰 사각형)' bbox 찾기.
@@ -189,9 +165,6 @@ def find_grid_roi_bbox(rot_gray_u8: np.ndarray) -> tuple[int, int, int, int]:
     return best
 
 
-# ---------------------------
-# Labeling: ALWAYS top-left=A_1, bottom-right=C_10
-# ---------------------------
 def assign_labels_by_sorting(temp_results, num_rows=10, num_cols=3):
     """
     30개 박스 기준으로:
@@ -229,9 +202,6 @@ def all_labels(num_rows=10, num_cols=3):
     return out
 
 
-# ---------------------------
-# Segmentation inside ROI (connected components)
-# ---------------------------
 def segment_boxes_in_roi(
     roi_bgr_u8: np.ndarray,
     roi_gray_u8: np.ndarray,
@@ -281,7 +251,6 @@ def segment_boxes_in_roi(
     if len(candidates) == 0:
         return [], bw
 
-    # robust filter to choose expected_boxes
     areas = np.array([c["area"] for c in candidates], dtype=np.float32)
     med_area = float(np.median(areas))
     mad_area = float(np.median(np.abs(areas - med_area))) + 1e-6
@@ -304,9 +273,6 @@ def segment_boxes_in_roi(
     return temp_results, bw
 
 
-# ---------------------------
-# Template (build + apply)
-# ---------------------------
 def init_template_acc():
     return defaultdict(lambda: {"sum": None, "count": 0})
 
@@ -336,7 +302,6 @@ def finalize_and_save_template(template_acc, template_dir: Path, roi_w: int, roi
     for label in all_labels():
         entry = template_acc.get(label, None)
         if entry is None or entry["sum"] is None or entry["count"] == 0:
-            # 없는 건 빈 mask로
             final = np.zeros((roi_h, roi_w), dtype=np.uint8)
             cnt = 0
         else:
@@ -348,10 +313,8 @@ def finalize_and_save_template(template_acc, template_dir: Path, roi_w: int, roi
         meta["counts"][label] = cnt
         cv2.imwrite(str(template_dir / f"{label}.png"), final)
 
-    # npz로 저장 (필수)
     np.savez_compressed(str(template_dir / "template_masks.npz"), **masks)
 
-    # meta 저장
     with open(template_dir / "template_meta.json", "w", encoding="utf-8") as f:
         json.dump(meta, f, indent=2)
 
@@ -373,7 +336,6 @@ def load_template(template_dir: Path):
         with open(meta_path, "r", encoding="utf-8") as f:
             meta = json.load(f)
 
-    # roi size는 meta 우선, 없으면 mask에서 추정
     if "roi_w" in meta and "roi_h" in meta:
         roi_w = int(meta["roi_w"])
         roi_h = int(meta["roi_h"])
@@ -391,7 +353,6 @@ def overlay_and_save_from_masks(
     overlay_alpha: float = 0.45,
     seed: int = 0,
     *,
-    # --- saving in original ratio (aspect) ---
     roi_bgr_orig: np.ndarray | None = None,
     roi_size_rs: tuple[int, int] | None = None,   # (w_rs, h_rs)
 ):
@@ -414,7 +375,6 @@ def overlay_and_save_from_masks(
     overlay_layer_rs = np.zeros_like(roi_bgr_rs, dtype=np.uint8)
     overlay_vis_rs = roi_bgr_rs.copy()
 
-    # If original ROI is provided, prepare orig overlay as well
     overlay_vis_orig = None
     overlay_layer_orig = None
     if roi_bgr_orig is not None:
@@ -435,16 +395,13 @@ def overlay_and_save_from_masks(
 
         color = rng.integers(50, 256, size=3, dtype=np.uint8)
 
-        # ---- resized overlay ----
         overlay_layer_rs[mask01 > 0] = color
 
         ys, xs = np.where(mask01 > 0)
         x0_rs, x1_rs = int(xs.min()), int(xs.max())
         y0_rs, y1_rs = int(ys.min()), int(ys.max())
 
-        # ---- crop saving (ORIGINAL ratio) ----
         if roi_bgr_orig is not None:
-            # map bbox back to original ROI coordinates
             x0_o = int(np.floor(x0_rs * sx))
             x1_o = int(np.ceil((x1_rs + 1) * sx)) - 1
             y0_o = int(np.floor(y0_rs * sy))
@@ -472,8 +429,6 @@ def overlay_and_save_from_masks(
             crop = roi_bgr_orig[y0_o:y1_o + 1, x0_o:x1_o + 1]
             cv2.imwrite(str(out_cells_dir / f"{label}.png"), crop)
 
-            # orig overlay + label
-            # (mask -> orig by nearest resize)
             m_orig = cv2.resize(mask01 * 255, (w0, h0), interpolation=cv2.INTER_NEAREST)
             overlay_layer_orig[m_orig > 0] = color
 
@@ -483,11 +438,9 @@ def overlay_and_save_from_masks(
             cv2.putText(overlay_vis_orig, label, (tx, ty), cv2.FONT_HERSHEY_SIMPLEX,
                         1.2, (255, 255, 255), 3, cv2.LINE_AA)
         else:
-            # fallback: save crop from resized ROI (old behavior)
             crop = roi_bgr_rs[y0_rs:y1_rs + 1, x0_rs:x1_rs + 1]
             cv2.imwrite(str(out_cells_dir / f"{label}.png"), crop)
 
-        # resized label text (for debug)
         tx, ty = int(x0_rs + 5), int(y0_rs + 30)
         cv2.putText(overlay_vis_rs, label, (tx, ty), cv2.FONT_HERSHEY_SIMPLEX,
                     1.2, (0, 0, 0), 6, cv2.LINE_AA)
@@ -502,9 +455,6 @@ def overlay_and_save_from_masks(
     return overlay_vis_rs, overlay_vis_orig
 
 
-# ---------------------------
-# Core per-image pipeline
-# ---------------------------
 def process_one_image(
     img_path: Path,
     output_root: Path,
@@ -545,19 +495,13 @@ def process_one_image(
     bgr_u8 = to_bgr_u8(img)
     gray_u8 = to_gray_u8(img)
 
-    # # 1) orientation
-    # angle = estimate_rotation_to_axis(gray_u8)
-    # rot_bgr = rotate_keep_all(bgr_u8, angle)
-    # rot_gray = to_gray_u8(rot_bgr)
 
-    # 1) MANUAL orientation only
     angle = manual_angle
     rot_bgr = rotate_keep_all(bgr_u8, angle)
     rot_gray = to_gray_u8(rot_bgr)
     if should_stop is not None and should_stop():
         raise RuntimeError("Cancelled by user")
 
-    # 2) grid ROI bbox
     x, y, w, h = find_grid_roi_bbox(rot_gray)
 
     x0 = max(0, x + roi_margin)
@@ -568,7 +512,6 @@ def process_one_image(
     roi_bgr = rot_bgr[y0:y1, x0:x1]   # <-- ORIGINAL ratio ROI
     roi_gray = rot_gray[y0:y1, x0:x1]
 
-    # 3) ROI resize to fixed size (template alignment / 내부 process 유지)
     roi_bgr_rs = cv2.resize(roi_bgr, (roi_w, roi_h), interpolation=cv2.INTER_LINEAR)
     roi_gray_rs = cv2.resize(roi_gray, (roi_w, roi_h), interpolation=cv2.INTER_LINEAR)
 
@@ -579,31 +522,23 @@ def process_one_image(
     ensure_dir(out_cells)
     ensure_dir(out_debug)
 
-    # debug saves
     cv2.imwrite(str(out_debug / f"{stem}_rotated.png"), rot_bgr)
 
     rot_dbg = rot_bgr.copy()
     cv2.rectangle(rot_dbg, (x0, y0), (x1, y1), (0, 255, 255), 3)
     cv2.imwrite(str(out_debug / f"{stem}_rotated_with_roi.png"), rot_dbg)
 
-    # 원본 ratio ROI도 저장 (요구사항)
     cv2.imwrite(str(out_debug / f"{stem}_roi_original.png"), roi_bgr)
 
-    # 기존 디버그(내부 process 확인용)도 남겨둠
     cv2.imwrite(str(out_debug / f"{stem}_roi_resized.png"), roi_bgr_rs)
 
-    # -------------------------
-    # 4) segmentation OR template-only
-    # -------------------------
     temp_results = []
     bw = None
 
     if template_only:
-        # process 단계: template만 사용 (segmentation 수행 안 함)
         if template_masks is None:
             raise RuntimeError("template_only=True but template_masks is None. Provide --template_dir.")
     else:
-        # build_template 단계 or 옵션상 segmentation 수행
         scale = (roi_w * roi_h) / float(900 * 2400)
         min_area_scaled = int(max(50, min_area * scale))
 
@@ -618,9 +553,6 @@ def process_one_image(
             raise RuntimeError("Cancelled by user")
         cv2.imwrite(str(out_debug / f"{stem}_roi_bw.png"), bw)
 
-    # -------------------------
-    # 5) If 30 detected -> label & overlay
-    # -------------------------
     if (not template_only) and (len(temp_results) == expected_boxes):
         labels = assign_labels_by_sorting(temp_results, num_rows=num_rows, num_cols=num_cols)
 
@@ -641,9 +573,6 @@ def process_one_image(
 
         return True, labels, temp_results, roi_gray_rs, roi_bgr_rs, out_dir
 
-    # -------------------------
-    # 6) template 적용 (process 단계에서는 항상 여기로 옴)
-    # -------------------------
     if template_masks is not None and (use_template_if_missing or template_only):
         overlay_rs, overlay_orig = overlay_and_save_from_masks(
             roi_bgr_rs,
@@ -667,9 +596,6 @@ def process_one_image(
 
         return False, None, None, roi_gray_rs, roi_bgr_rs, out_dir
 
-    # -------------------------
-    # 7) template도 없고 부족하면, partial overlay만 저장
-    # -------------------------
     if (bw is not None) and len(temp_results) > 0:
         rng = np.random.default_rng(seed)
         overlay_layer = np.zeros_like(roi_bgr_rs, dtype=np.uint8)
@@ -685,10 +611,7 @@ def process_one_image(
 
     return False, None, None, roi_gray_rs, roi_bgr_rs, out_dir
 
-    # 7) template도 없고 부족하면, 그래도 현재 검출된 것만 overlay로 남김
-    #    (나중에 템플릿 만든 뒤 다시 돌리면 됨)
     if len(temp_results) > 0:
-        # 임시 라벨 없이 색만 덮기
         rng = np.random.default_rng(seed)
         overlay_layer = np.zeros_like(roi_bgr_rs, dtype=np.uint8)
         for item in temp_results:
@@ -704,9 +627,6 @@ def process_one_image(
     return False, None, None, roi_gray_rs, roi_bgr_rs, out_dir
 
 
-# ---------------------------
-# Batch: build template + process all
-# ---------------------------
 def list_images(input_dir: Path, exts=(".tif", ".tiff", ".png", ".jpg", ".jpeg")):
     files = []
     for p in sorted(input_dir.rglob("*")):
@@ -786,7 +706,6 @@ def build_template_from_dataset(
                 progress_callback(done=idx, total=total, good=good, bad=bad, current=img_path.name)
             continue
 
-        # accumulate per label
         for label, item in zip(labels, temp_results):
             mask01 = (item["mask"] > 0).astype(np.uint8)  # 0/1
             add_to_template_acc(template_acc, label, mask01)
@@ -843,7 +762,6 @@ def process_dataset_with_optional_template(
             f"Use same roi_w/roi_h."
         )
 
-    # process_one_image에 넣을 공통 kwargs (img_path만 job에서 따로 넣음)
     process_kwargs = dict(
         output_root=output_root,
         expected_boxes=expected_boxes,
@@ -913,9 +831,6 @@ def orient_preview(input_dir: Path, output_root: Path, manual_angle: float, k: i
         rot = rotate_keep_all(bgr_u8, manual_angle)
         cv2.imwrite(str(out_orient / f"{p.stem}_rot_{manual_angle:+.2f}deg.png"), rot)
 
-# ---------------------------
-# CLI
-# ---------------------------
 def main():
     import argparse
 

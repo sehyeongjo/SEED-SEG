@@ -122,7 +122,6 @@ function startPolling() {
                 stopPolling();
             }
         } catch (_) {
-            // ignore polling errors
         }
     }, 1200);
 }

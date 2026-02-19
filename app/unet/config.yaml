@@ -1,0 +1,46 @@
+seed: 42
+
+data:
+  root: "data"
+  original_dir: "original"
+  mask_dir: "mask"
+  # Optional: set specific merged IDs. Empty scans all merged_* under root.
+  merged_ids: []          # Example: ["011042", "011043"] (merged_{A}_output)
+  img_ext: ".png"
+  mask_ext: ".png"
+
+train:
+  img_w: 544
+  img_h: 256
+  batch_size: 16
+  num_workers: 4
+  val_ratio: 0.15
+  test_ratio: 0.0
+  max_epochs: 80
+  precision: "16-mixed"   # "32" or "16-mixed"
+  lr: 1.0e-3
+  lr_unfreeze: 1.0e-4
+  weight_decay: 1.0e-4
+  freeze_encoder_epochs: 8
+  threshold: 0.5
+
+model:
+  arch: "unet"
+  encoder_name: "efficientnet-b0"
+  encoder_weights: "imagenet"
+  in_channels: 3
+  num_classes: 1
+
+loss:
+  bce_weight: 0.5
+  dice_weight: 0.5
+
+aug:
+  enable: true
+  rotate_limit: 180
+  scale_limit: 0.2
+  brightness_contrast: 0.2
+
+logging:
+  out_dir: "runs/seed_unet_b0"
+  ckpt_monitor: "val_dice"

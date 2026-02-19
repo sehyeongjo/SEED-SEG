@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 set -e
 
-# SSH host keys (처음 실행 시 생성)
+# Generate SSH host keys on first run.
 ssh-keygen -A
 
-# SSH daemon 시작
+# Start SSH daemon.
 /usr/sbin/sshd
 
-# FastAPI (reload 필수)
+# Start FastAPI with reload enabled.
 exec uvicorn app.main:app --host 0.0.0.0 --port 7900 --reload --reload-dir /app

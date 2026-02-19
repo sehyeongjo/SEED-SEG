@@ -11,9 +11,6 @@ from pathlib import Path
 from tqdm import tqdm
 
 
-# -------------------------------------------------
-# 1. 유틸: BGR uint8 변환
-# -------------------------------------------------
 def to_bgr_u8(img: np.ndarray) -> np.ndarray:
     if img is None:
         return None
@@ -32,9 +29,6 @@ def to_bgr_u8(img: np.ndarray) -> np.ndarray:
     return bgr
 
 
-# -------------------------------------------------
-# 2. 회전 (잘림 방지)
-# -------------------------------------------------
 def rotate_image(image: np.ndarray, angle_deg: float) -> np.ndarray:
     h, w = image.shape[:2]
     center = (w / 2.0, h / 2.0)
@@ -57,9 +51,6 @@ def rotate_image(image: np.ndarray, angle_deg: float) -> np.ndarray:
     )
 
 
-# -------------------------------------------------
-# 3. 각도 계산 (공통 로직)
-# -------------------------------------------------
 def calculate_angle(gray_img: np.ndarray) -> float:
     gx = cv2.Sobel(gray_img, cv2.CV_64F, 1, 0, ksize=3)
     gy = cv2.Sobel(gray_img, cv2.CV_64F, 0, 1, ksize=3)
@@ -72,9 +63,6 @@ def calculate_angle(gray_img: np.ndarray) -> float:
     return np.degrees(angle_rad)
 
 
-# -------------------------------------------------
-# 4. 시각화
-# -------------------------------------------------
 def draw_visualization(img_bgr, angle_deg, save_path, note=""):
     h, w = img_bgr.shape[:2]
     cx, cy = w // 2, h // 2
@@ -82,18 +70,15 @@ def draw_visualization(img_bgr, angle_deg, save_path, note=""):
 
     angle = np.radians(angle_deg)
 
-    # 기준 축
     cv2.line(img_bgr, (cx - length, cy), (cx + length, cy), (200, 200, 200), 1)
     cv2.line(img_bgr, (cx, cy - length), (cx, cy + length), (200, 200, 200), 1)
 
-    # 기울기 축
     x1 = int(cx + length * np.cos(angle))
     y1 = int(cy + length * np.sin(angle))
     x2 = int(cx - length * np.cos(angle))
     y2 = int(cy - length * np.sin(angle))
     cv2.line(img_bgr, (x1, y1), (x2, y2), (0, 0, 255), 3)
 
-    # 수직 축
     perp = angle + np.pi/2
     x3 = int(cx + length * np.cos(perp))
     y3 = int(cy + length * np.sin(perp))
@@ -118,9 +103,6 @@ def draw_visualization(img_bgr, angle_deg, save_path, note=""):
     cv2.imwrite(str(save_path), img_bgr)
 
 
-# -------------------------------------------------
-# 5. 메인 처리
-# -------------------------------------------------
 def process_tray(tray_num, manual_angle=None, sample_visual=5):
     tray_str = str(tray_num)
     base_input_dir = Path(f"../project/tray/{tray_str}")
@@ -129,9 +111,7 @@ def process_tray(tray_num, manual_angle=None, sample_visual=5):
         print("입력 폴더 없음")
         return
 
-    # 출력 구조
     json_dir = Path("slope_output/json")
-    # vis_dir = Path(f"slope_output/visual/tray/{tray_str}")
     base_vis_dir = Path(f"slope_output/visual/tray/{tray_str}")
 
     if manual_angle is None:
@@ -201,14 +181,11 @@ def process_tray(tray_num, manual_angle=None, sample_visual=5):
             "angle": float(f"{angle:.4f}")
         })
 
-    # 평균
-    # avg_angle = sum(d["angle"] for d in angle_data) / len(angle_data)
     angles = np.array([d["angle"] for d in angle_data])
 
     median = np.median(angles)
     mad = np.median(np.abs(angles - median))
 
-    # 너무 작은 MAD 방지
     if mad < 1:
         mad = 1
 
@@ -244,9 +221,6 @@ def process_tray(tray_num, manual_angle=None, sample_visual=5):
 
     print(f"평균 각도: {avg_angle:.4f}")
 
-    # -------------------------
-    # 샘플 시각화
-    # -------------------------
     sample_count = min(sample_visual, len(images))
     selected = random.sample(images, sample_count)
 
@@ -268,9 +242,6 @@ def process_tray(tray_num, manual_angle=None, sample_visual=5):
     print("=== 완료 ===")
 
 
-# -------------------------------------------------
-# CLI
-# -------------------------------------------------
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--tray", type=str, required=True)

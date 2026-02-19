@@ -411,7 +411,7 @@ def mask_list_merged_folders(tray: str):
 
     items = []
     for p in base.iterdir():
-        if p.is_dir() and p.name.startswith("merged_") and p.name.endswith("_output"):
+        if p.is_dir() and p.name.startswith("merged_"):
             items.append(p.name)
     items.sort()
     return {"items": items}

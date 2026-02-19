@@ -5,3 +5,10 @@ pillow==11.1.0
 numpy==2.2.2
 opencv-python-headless==4.10.0.84
 tqdm==4.67.1
+torch
+torchvision
+transformers
+pytorch-lightning
+segmentation-models-pytorch
+albumentations
+pyyaml
