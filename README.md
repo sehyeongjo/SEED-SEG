@@ -55,7 +55,10 @@ Data(SEED CT) File Tree Structure
 .
 └── Data(Root)/
     ├── tray/
-    │   ├── 1
+    │   ├── 1/
+    │   │   ├── merged_010922.tif
+    │   │   ├── merged_010923.tif
+    │   │   └── ...
     │   ├── 2
     │   └── ...
     ├── trayseg_output/
