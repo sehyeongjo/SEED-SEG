@@ -10,9 +10,16 @@ cd SEED-SEG
 docker build -t seg-seed .
 ```
 
+If a credential error occurs regarding python:3.11-slim, run the following command:
+```
+docker pull python:3.11-slim
+```
+
+
 3. Docker Container Run:
 ```
 docker run -d --name seg-seed2 \
+  --gpus all \
   -p 7900:7900 \
   -p 7922:22 \
   --mount type=bind,source="{SEED CT DATA ROOT PATH}",target=/data \
