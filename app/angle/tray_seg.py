@@ -1,6 +1,5 @@
 import os
 os.environ["OPENCV_LOG_LEVEL"] = "ERROR"
-from concurrent.futures import ProcessPoolExecutor, wait, FIRST_COMPLETED
 import json
 from pathlib import Path
 from collections import defaultdict
@@ -24,14 +23,6 @@ from tqdm import tqdm
 #   --tray_num {} \
 #   --manual_angle {*}
 # ---------------------------
-
-def _process_one_image_job(img_path_str: str, process_kwargs: dict):
-    from pathlib import Path
-    img_path = Path(img_path_str)
-
-    # 반환값은 크게 필요 없어서 “성공 여부 + 어떤 방식으로 처리됐는지” 정도만 리턴
-    ok, _, _, _, _, _ = process_one_image(img_path=img_path, **process_kwargs)
-    return bool(ok)
 
 # ---------------------------
 # Utils
@@ -66,14 +57,6 @@ def to_gray_u8(img: np.ndarray) -> np.ndarray:
     if img.dtype != np.uint8:
         img = cv2.normalize(img, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
     return img
-
-def _mp_worker_init():
-    # 프로세스 병렬 + OpenCV 내부 스레드가 겹치면 느려질 수 있어서 제한
-    try:
-        import cv2
-        cv2.setNumThreads(1)
-    except Exception:
-        pass
 
 # ---------------------------
 # Orientation
@@ -547,7 +530,7 @@ def process_one_image(
       1) 내부 process(ROI resize 등)는 그대로 두되, 저장되는 이미지는 원본 ratio로 저장
          - cells/*.png는 원본 ROI에서 crop해서 저장
          - overlay도 원본 ROI 버전으로 저장(추가로 resized 디버그도 저장)
-      2) process 단계에서는 template만 사용(재-segmentation 없음) -> template_only=True로 제어
+      2) template_only=True인 경우에만 template만 사용하고 segmentation을 건너뜀
 
     반환:
       - success_30: bool (30개 detection 성공)
@@ -838,7 +821,6 @@ def process_dataset_with_optional_template(
     overlay_alpha: float = 0.45,
     seed: int = 42,
     manual_angle: float = 0.0,
-    workers: int | None = None,   # <-- 추가
     progress_callback=None,
     out_dir_suffix: str = "_output",
     should_stop=None,
@@ -848,14 +830,18 @@ def process_dataset_with_optional_template(
         raise RuntimeError(f"No images found in {input_dir}")
 
     template_masks = None
-    if template_dir is not None:
-        template_masks, tw, th, meta = load_template(template_dir)
-        if (tw != roi_w) or (th != roi_h):
-            raise RuntimeError(
-                f"Template ROI size mismatch. "
-                f"Template={tw}x{th}, current={roi_w}x{roi_h}. "
-                f"Use same roi_w/roi_h."
-            )
+    if template_dir is None:
+        raise RuntimeError("Process mode requires template_dir.")
+    npz_path = template_dir / "template_masks.npz"
+    if not npz_path.exists():
+        raise FileNotFoundError(f"Missing template: {npz_path}")
+    template_masks, tw, th, meta = load_template(template_dir)
+    if (tw != roi_w) or (th != roi_h):
+        raise RuntimeError(
+            f"Template ROI size mismatch. "
+            f"Template={tw}x{th}, current={roi_w}x{roi_h}. "
+            f"Use same roi_w/roi_h."
+        )
 
     # process_one_image에 넣을 공통 kwargs (img_path만 job에서 따로 넣음)
     process_kwargs = dict(
@@ -872,13 +858,11 @@ def process_dataset_with_optional_template(
         seed=seed,
         template_masks=template_masks,
         use_template_if_missing=True,
-        template_only=(template_masks is not None),
+        template_only=True,
         manual_angle=manual_angle,
         out_dir_suffix=out_dir_suffix,
+        should_stop=should_stop,
     )
-
-    if workers is None:
-        workers = min(os.cpu_count() or 4, 10)
 
     ok_count = 0
     tpl_count = 0
@@ -888,44 +872,24 @@ def process_dataset_with_optional_template(
     if progress_callback is not None:
         progress_callback(done=0, total=total, ok=0, template=0, fail=0)
 
-    ex = ProcessPoolExecutor(max_workers=workers, initializer=_mp_worker_init)
-    cancelled = False
-    try:
-        futures = [
-            ex.submit(_process_one_image_job, str(p), process_kwargs)
-            for p in files
-        ]
-        pending = set(futures)
-
-        pbar = tqdm(total=len(futures), desc=f"Processing dataset (mp={workers})")
-        while pending:
-            if should_stop is not None and should_stop():
-                cancelled = True
-                ex.shutdown(wait=False, cancel_futures=True)
-                raise RuntimeError("Cancelled by user")
-            done_futs, pending = wait(pending, timeout=0.5, return_when=FIRST_COMPLETED)
-            if not done_futs:
-                continue
-            for fut in done_futs:
-                pbar.update(1)
-                try:
-                    ok = fut.result()
-                    if ok:
-                        ok_count += 1
-                    else:
-                        if template_masks is not None:
-                            tpl_count += 1
-                        else:
-                            fail_count += 1
-                except Exception:
+    for img_path in tqdm(files, desc="Processing dataset"):
+        if should_stop is not None and should_stop():
+            raise RuntimeError("Cancelled by user")
+        try:
+            ok, _, _, _, _, _ = process_one_image(img_path=img_path, **process_kwargs)
+            if ok:
+                ok_count += 1
+            else:
+                if template_masks is not None:
+                    tpl_count += 1
+                else:
                     fail_count += 1
-                done += 1
-                if progress_callback is not None:
-                    progress_callback(done=done, total=total, ok=ok_count, template=tpl_count, fail=fail_count)
-        pbar.close()
-    finally:
-        if not cancelled:
-            ex.shutdown(wait=True)
+        except Exception:
+            fail_count += 1
+        finally:
+            done += 1
+            if progress_callback is not None:
+                progress_callback(done=done, total=total, ok=ok_count, template=tpl_count, fail=fail_count)
 
     print(f"[DONE] ok(30 detected)={ok_count}, template_used={tpl_count}, fail(no output)={fail_count}")
 
@@ -956,9 +920,7 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser("Tray grid segmentation with template fallback")
-    parser.add_argument("--mode", type=str, required=True, choices=["build_template", "process", "orient"])
-    parser.add_argument("--input_dir", type=str, default="test_input")
-    parser.add_argument("--output_root", type=str, default="seg_output")
+    parser.add_argument("--mode", type=str, required=True, choices=["build_template", "process", "orient", "all"])
 
     parser.add_argument("--template_dir", type=str, default="templates")
     parser.add_argument("--roi_w", type=int, default=900)
@@ -980,23 +942,23 @@ def main():
     parser.add_argument("--orient_k", type=int, default=3)
 
     parser.add_argument("--tray_num", type=int, required=True)
-
-    parser.add_argument("--workers", type=int, default=None)
+    parser.add_argument("--tray_root", type=str, default="/data/tray")
+    parser.add_argument("--template_root", type=str, default="/data/trayseg_output")
+    parser.add_argument("--template_result_root", type=str, default="/data/trayseg_output")
+    parser.add_argument("--process_result_root", type=str, default="/data/trayseg_output")
+    parser.add_argument("--orient_result_root", type=str, default="seg_output/orient/tray")
 
     args = parser.parse_args()
+    input_dir = Path(args.tray_root)
+    template_dir = Path(args.template_root)
 
+    input_full_path = input_dir / str(args.tray_num)
+    template_full_path = template_dir / str(args.tray_num) / "template"
 
-
-    input_dir = Path("../project/tray")
-    template_dir = Path("seg_output/templates/tray")
-
-
-    if args.mode == "build_template":
-        input_full_path = input_dir / str(args.tray_num)
-        output_root = Path("seg_output/templates/result/tray")
+    def _run_build_template():
+        output_root = Path(args.template_result_root)
         output_full_path = output_root / str(args.tray_num)
         ensure_dir(output_full_path)
-        template_full_path = template_dir / str(args.tray_num)
         build_template_from_dataset(
             input_dir=input_full_path,
             template_dir=template_full_path,
@@ -1013,14 +975,13 @@ def main():
             seed=args.seed,
             thresh=args.template_thresh,
             manual_angle=args.manual_angle,
+            out_dir_suffix="",
         )
 
-    elif args.mode == "process":
-        input_full_path = input_dir / str(args.tray_num)
-        output_root = Path("seg_output/result/tray")
+    def _run_process():
+        output_root = Path(args.process_result_root)
         output_full_path = output_root / str(args.tray_num)
         ensure_dir(output_full_path)
-        template_full_path = template_dir / str(args.tray_num)
         process_dataset_with_optional_template(
             input_dir=input_full_path,
             output_root=output_full_path,
@@ -1036,12 +997,11 @@ def main():
             overlay_alpha=args.overlay_alpha,
             seed=args.seed,
             manual_angle=args.manual_angle,
-            workers=args.workers,
+            out_dir_suffix="",
         )
 
-    elif args.mode == "orient":
-        input_full_path = input_dir / str(args.tray_num)
-        output_root = Path("seg_output/orient/tray")
+    def _run_orient():
+        output_root = Path(args.orient_result_root)
         output_full_path = output_root / str(args.tray_num)
         ensure_dir(output_full_path)
         orient_preview(
@@ -1051,6 +1011,16 @@ def main():
             k=args.orient_k,
             seed=args.seed,
         )
+
+    if args.mode == "build_template":
+        _run_build_template()
+    elif args.mode == "process":
+        _run_process()
+    elif args.mode == "orient":
+        _run_orient()
+    elif args.mode == "all":
+        _run_build_template()
+        _run_process()
 
 
 if __name__ == "__main__":

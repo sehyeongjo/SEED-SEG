@@ -108,7 +108,9 @@ def _cv_angle_from_saved(tray_id: str) -> float:
 
 
 def _load_tray_seg_module():
-    return importlib.import_module("app.angle.tray_seg")
+    # Always reload so runtime picks up tray_seg.py edits without server restart.
+    module = importlib.import_module("app.angle.tray_seg")
+    return importlib.reload(module)
 
 
 def _collect_overlay_preview_urls(tray_id: str, k: int = 3) -> list[str]:

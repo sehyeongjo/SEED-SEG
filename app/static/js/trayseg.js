@@ -69,14 +69,22 @@ function renderOverlayImages(urls, forceShow = false) {
 function applyStatusState(data) {
     const stage = data.stage || "idle";
     const running = stage === "template_running" || stage === "process_running" || stage === "cancelling";
+    const freezeOverlay = stage === "process_running" || stage === "cancelling";
+    const canStartSegmentation =
+        stage === "template_done" ||
+        stage === "process_done" ||
+        stage === "cancelled" ||
+        stage === "error";
 
     setProgress(templateProgressFill, templateProgressText, data.template_progress || {});
     setProgress(processProgressFill, processProgressText, data.process_progress || {});
-    renderOverlayImages(data.overlay_images || [], stage === "template_done");
+    if (!freezeOverlay) {
+        renderOverlayImages(data.overlay_images || [], stage === "template_done");
+    }
 
     buildTemplateBtn.disabled = running;
     cancelJobBtn.disabled = !running;
-    segmentationBtn.disabled = !(stage === "template_done");
+    segmentationBtn.disabled = !canStartSegmentation;
 
     if (stage === "error" || stage === "cancelled") {
         setStatus(data.message || "TraySeg error");
@@ -271,7 +279,14 @@ async function startSegmentation() {
     try {
         const res = await fetch(`/api/trayseg/${encodeURIComponent(trayId)}/process`, {method: "POST"});
         if (!res.ok) {
-            throw new Error(`Failed to start process (${res.status})`);
+            let detail = "";
+            try {
+                const errData = await res.json();
+                detail = errData.detail ? `: ${errData.detail}` : "";
+            } catch (_) {
+                detail = "";
+            }
+            throw new Error(`Failed to start process (${res.status})${detail}`);
         }
         const data = await res.json();
         applyStatusState(data);

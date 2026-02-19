@@ -32,6 +32,27 @@ http://localhost:7900
 ```
 
 
+4-1. For using command line
+```
+IMPORTANT!!
+1.
+# Edit this list directly.
+TRAYS=(1 10 20 30) or TRAYS=({1..30})
+
+2. permission
+chmod +x build_template.sh
+chmod +x box_segmentation.sh
+
+
+# for build template
+./build_template.sh
+
+# for bod segmentation
+./box_segmentation.sh
+```
+
+
+
 
 Info.
 
