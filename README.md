@@ -7,7 +7,7 @@ cd SEED-SEG
 
 2. Docker Image Build:
 ```
-cd SEED-SEG & docker build -t seg-seed .
+docker build -t seg-seed .
 ```
 
 3. Docker Container Run:
