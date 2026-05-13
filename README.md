@@ -44,7 +44,7 @@ ssh -P 7922 root@localhost / pw: root
 ```
 IMPORTANT!!
 1.
-# Edit this list directly.
+# Edit this list directly in shell script files.
 TRAYS=(1 10 20 30) or TRAYS=({1..30})
 
 2. permission
@@ -53,10 +53,10 @@ chmod +x box_segmentation.sh
 
 
 # Build template
-./build_template.sh
+bash build_template.sh
 
 # Run box segmentation
-./box_segmentation.sh
+bash box_segmentation.sh
 ```
 
 5. SAM
